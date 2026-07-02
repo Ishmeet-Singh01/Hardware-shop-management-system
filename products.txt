@@ -1,0 +1,3 @@
+cera,swan neck,victor,15mm,1800,2100,0
+varmora,basin,oval,standard,2500,3000,4
+jaquar,tap,prime,15mm,700,850,32
