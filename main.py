@@ -80,6 +80,7 @@ def sell_product():
     today = datetime.now().strftime("%d-%m-%Y")
      
     bill_total = 0
+    
     while True:
         item_found = False
         find = str(input("Enter The Item name to buy: "))
@@ -114,7 +115,7 @@ def sell_product():
                     updated_line = brand + "," + category + "," + model_name + "," + size + "," + cp + "," + sp + "," + str(new_stock) + "\n"
                     new_data = new_data + updated_line
                     price_per_item = int(sp)
-                    line_total = price_per_item * quantity
+                    line_total = price_per_item * quantity                 
                     filees = open("sales.txt", "a")
                     sales_line = str(bill_no)+ "," + str(today) + "," + brand + "," + category+ "," + model_name + "," + str(quantity) + "," + str(price_per_item) + "," +str(line_total) + "\n"
                     filees.write(sales_line)
@@ -126,7 +127,6 @@ def sell_product():
             
             else:
                 new_data = new_data + line
-        file.close()
         file = open("products.txt", "w")
         file.write(new_data)
         file.close()
@@ -149,14 +149,18 @@ def sell_product():
     if bill_total == 0:
         print("No products were sold.")
         return
-    print("Your Final Bill is:",bill_total, "Ruppee")
+    print("Subtoal is:",bill_total, "Ruppee")
+    discount = int(input("Enter Discount amount: "))
+    final_bill = bill_total-discount
+    print("Discount:", discount, "Rupee")
+    print("Final is:",final_bill, "Ruppee")
     recieved = int(input("Enter The Amount To pay:"))
-    if recieved >= bill_total:
+    if recieved >= final_bill:
         pending = 0
         status = "Paid"
         print("Balance Cleared")
     else:
-        pending = bill_total - recieved
+        pending = final_bill - recieved
         status = "Pending"
 
     bill_line = (
@@ -164,6 +168,8 @@ def sell_product():
         customer + "," +
         str(today) + "," +
         str(bill_total) + "," +
+        str(discount) + "," +
+        str(final_bill)+ "," +
         str(recieved) + "," +
         str(pending) + "," +
         status + "\n"
@@ -352,27 +358,29 @@ def recieve_payment():
     for line in file:
         
         data = line.split(",")
-        if len(data)<7:
+        if len(data)<9:
             continue
         bill = int(data[0])
         name = data[1]
         date = data[2]
-        total = int(data[3])
-        paid = int(data[4])
-        pending =int(data[5])
-        status = data[6]
+        subtotal = int(data[3])
+        discount = int(data[4])
+        final_bill = int(data[5])
+        paid = int(data[6])
+        pending =int(data[7])
+        status = data[8].strip()
         if bill_no == bill:
             bill_found = True
             
             print("====  Bill Found  ====")
-            print("Bill No.", str(bill) +"\n" ,"Customer's Name:",name +"\n" ,"Date:",str(date)+"\n" ,"Total balance:",str(total)+"\n" ,"Paid:",str(paid)+"\n" ,"Pending:",str(pending)+"\n" ,"Status:",status+"\n")   
+            print("Bill No.", str(bill) +"\n" ,"Customer's Name:",name +"\n" ,"Date:",str(date)+"\n" ,"SubTotal balance:",str(subtotal)+"\n" ,"Discount:",str(discount)+"\n" ,"Final Bill.:",str(final_bill)+"\n" ,"Paid:",str(paid)+"\n" ,"Pending:",str(pending)+"\n" ,"Status:",status+"\n")   
             if status == "Paid":
                 print("This bill is already cleared.") 
                 file.close()
                 return
             today_payment = int(input("Enter The Amount Received Today:"))
             paid = paid + today_payment
-            pending = total - paid
+            pending = final_bill - paid
             if pending == 0:
                 status = "Paid"
             else:
@@ -385,7 +393,9 @@ def recieve_payment():
             update = (str(bill) + "," +
             name + "," +
             str(date) + "," +
-            str(total) + "," +
+            str(subtotal)+ "," +
+            str(discount)+ "," +
+            str(final_bill) + "," +
             str(paid) + "," +
             str(pending) + "," +
             status + "\n")
@@ -405,10 +415,7 @@ def recieve_payment():
     filea.close()
     if bill_found:
         print("Done")
-        
-        
-    
     if bill_found==False:
         print("Bill Not Found")
-    
-recieve_payment()
+
+
