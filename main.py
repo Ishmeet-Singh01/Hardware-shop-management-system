@@ -1,5 +1,7 @@
+import sqlite3
 from datetime import datetime
-def add_product():
+def add_productv2():
+    
     brand = str(input("Brand Name: "))
     category = str(input("Category: "))
     model_name = str(input("Model Name: "))
@@ -7,132 +9,208 @@ def add_product():
     cp = str(input("Current Cost Price: "))
     sp = str(input("Suggested Price To sell: "))
     stock = str(input("Stock Present: "))
-    file = open("products.txt" , "a")
-    file.write(brand + "," + category + "," + model_name + "," + size + "," + cp + "," + sp + "," + stock + "\n")
-    file.close()
-    print("Product Added Successfully")
+    connection = sqlite3.connect("hardware_store.db")
+    cursor = connection.cursor()
+    cursor.execute("""
+INSERT INTO Products(
+                   Brand,
+                   Category,
+                   Model,
+                   Size,
+                   CostPrice,
+                   SellingPrice,
+                   Stock)
+                   
+                   VALUES(?,?,?,?,?,?,?)
+                   """,
+                  ( brand,
+                   category,
+                   model_name,
+                   size,
+                   cp,
+                   sp,
+                   stock
+                   )
+                   )
+    connection.commit()
+    connection.close()
+    print("Item Added Successfully")
 
-def show_product():
-    file = open("products.txt" , "r")
-    for line in file:
-        data = line.split(",")
-        brand = data[0]
-        category = data[1]
-        model_name = data [2]
-        size = data[3]
-        cp = data [4]
-        sp = data [5]
-        stock = int(data [6])
-        print("Brand Name: ", brand)
-        print("Category: ", category)
-        print ("Model Name: ", model_name)
-        print("Size: ", size)
-        print("Cost Price: ",cp)
-        print("Selling Price: ",sp)
-        print("Stock: ", stock)
-        if stock <= 5:
-            print("⚠ LOW STOCK")
-        print("----------------------------------")
-    file.close()
-
-def search_product():
-    file = open("products.txt" , "r")
-    find = str(input("Enter The Item name to search: "))
-    find_item = find.lower()
-    item_found = False
-    for line in file:
-        data = line.split(",")
-        brand = data[0]
-        category = data[1]
-        model_name = data [2]
-        size = data[3]
-        cp = data [4]
-        sp = data [5]
-        stock = data [6]
-        Brand = brand.lower()
-        
-        Model = model_name.lower()
-        full_name = Brand + " " + Model
-        if find_item in full_name:
-            item_found = True 
-            print("Item Found: " +"\n" ,"Brand Name: ", brand + "\n" ,"Category: " ,category + "\n"
-                  "Model Name: " ,model_name + "\n" , "Size: ", size + "\n",
-                  "Cost Price: ",cp +"\n", "Selling Price: ",sp +"\n", "Stock: ", stock +"\n")
-        
-            
-    if item_found == False:
-        print("Item Not Found")
-    file.close()
-    print("----Searching Completed ----")
-
-def sell_product():
-    bill_file = open("bill.txt", "r")
-    count = 0
-
-    for line in bill_file:
-        if line.strip() != "":
-            count = count + 1
-
-    bill_file.close()
-
-    bill_no = 1001 + count
-    print("\nBill No:", bill_no)
-    today = datetime.now().strftime("%d-%m-%Y")
-     
-    bill_total = 0
+def search_productv2():
     
-    while True:
-        item_found = False
-        find = str(input("Enter The Item name to buy: "))
-        quantity = int(input("Enter The quantity: "))
-        file = open("products.txt" , "r")
-        new_data = ""
-        for line in file:
+    connection = sqlite3.connect("hardware_store.db")
+    cursor = connection.cursor()
 
-            data = line.split(",")
-            if len(data) < 7:
-                continue
-            brand = data[0]
-            category = data[1]
-            model_name = data [2]
-            size = data[3]
-            cp = data [4]
-            sp = data [5]
-            stock = int(data [6])
-            Brand = brand.lower()
-            Category = category.lower()
-            Model = model_name.lower()
-            full_name = Brand + " " + Category + " " + Model
-            find_item = find.lower()
-            if find_item in full_name:
-                item_found = True 
-                print("Item Found: " +"\n" ,"Brand Name: ", brand + "\n" ,"Category: " ,category + "\n"
-                    "Model Name: " ,model_name + "\n" , "Size: ", size + "\n",
-                    "Cost Price: ",cp +"\n", "Selling Price: ",sp +"\n", "Stock: ", stock )
-                if quantity <= stock :
-                    
-                    new_stock = stock - quantity
-                    updated_line = brand + "," + category + "," + model_name + "," + size + "," + cp + "," + sp + "," + str(new_stock) + "\n"
-                    new_data = new_data + updated_line
-                    price_per_item = int(sp)
-                    line_total = price_per_item * quantity                 
-                    filees = open("sales.txt", "a")
-                    sales_line = str(bill_no)+ "," + str(today) + "," + brand + "," + category+ "," + model_name + "," + str(quantity) + "," + str(price_per_item) + "," +str(line_total) + "\n"
-                    filees.write(sales_line)
-                    filees.close()
-                    print("Sale Successfull " + "\n" , "New Stock: " , new_stock)                        
-                    bill_total += line_total
-                else:
-                    print("Not Enough Stock")        
+    find = str(input("Enter The Item name to search: "))
+    
+    
+    cursor.execute("""
+SELECT * FROM Products
+                   WHERE Brand LIKE ?
+                   OR Category LIKE?
+                   OR Model LIKE ?
+                   """,
+                   ("%"+find+"%",
+                    "%"+find+"%",
+                    "%"+find+"%"))
+    rows = cursor.fetchall()
+    
+    if rows == []:
+            print("No Product Found")
+    else:
+        for row in rows:
+            print("====  Product  ====")
+            print("ID:",row[0])
+            print("Brand:",row[1])          
+            print("Category:",row[2])          
+            print("Model:",row[3])          
+            print("Stock:",row[7])          
+            print("Selling Price:",row[6])     
+            print("========================")     
+
+def sell_productv2():
+    connection = sqlite3.connect("hardware_store.db")
+    cursor = connection.cursor()
+    
+    print("""
+1. New Customer
+          2.Existing Customer""")
+    
+    def add_customer():
+        name = input("Enter Customer's Name:")
+        phone = input("Enter Phone Number:")
+        address = input("Address")
+        current_pending = 0
+        cursor.execute("""
+    INSERT INTO Customers(
+                        Name,
+                        Phone,
+                        Address,
+                        CurrentPending
+                        )VALUES(
+                        ?,
+                        ?,
+                        ?,
+                        ?)""",
+                        (name,
+                            phone,
+                            address,
+                            current_pending))
+        customer_id = cursor.lastrowid
+        return customer_id
+    today = datetime.now().strftime("%d-%m-%Y")
+    choice = int(input("Enter Your Choice: "))
+    if choice == 1:
+        customer_id=add_customer()
+    elif choice == 2:
+        search = input("Enter customer's Name or Phone:")
+        cursor.execute(
+            """
+SELECT * FROM Customers
+WHERE name LIKE ?
+OR phone LIKE ?""",
+("%"+search+"%",
+                    "%"+search+"%")
+        )
+        found = cursor.fetchall()
+        if found == []:
+            print("No Record Found")
+            print(
+                """ Create New Customer ?
+                1. Yes
+                2. No"""
+            )
             
+            ch = int(input("Enter The Choice:"))
+            if ch == 1:
+                
+                customer_id = add_customer() 
+            elif ch == 2:
+                print("Billing Cancelled.")
+                connection.close()
+                return
             else:
-                new_data = new_data + line
-        file = open("products.txt", "w")
-        file.write(new_data)
-        file.close()
-        if item_found == False:
-                print("Item Not Found")
+                print("Invalid Choice")
+        else:
+            for findd in found:
+                print("====  Details  ====")
+                print("ID:",findd[0])
+                print("Name:",findd[1])          
+                print("Phone:",findd[2])          
+                print("Address:",findd[3])  
+                print("Pending Balance:",findd[4])
+                
+            customer_found = False
+            verify = int(input("Enter Customer ID:"))
+            for findd in found:
+                if findd[0]==verify:
+                    customer_found = True
+                    customer_id = findd[0]
+                    break
+            if customer_found == False:
+                print("Invalid Customer ID")
+                connection.close()
+                return
+    else:
+        print("Invalid Choice")
+        connection.close()
+        return
+    cart = []
+    bill_total = 0
+    while True:
+        find = str(input("Enter The Item name to Buy: "))
+        quantity = int(input("Enter The quantity: "))
+        cursor.execute("""
+SELECT * FROM Products
+                   WHERE Brand LIKE ?
+                   OR Category LIKE?
+                   OR Model LIKE ?
+                   """,
+                   ("%"+find+"%",
+                    "%"+find+"%",
+                    "%"+find+"%"))
+        rows = cursor.fetchall()
+        
+        if rows == []:
+                print("No Product Found")
+        else:
+            for row in rows:
+                print("====  Product  ====")
+                print("ID:",row[0])
+                print("Brand:",row[1])          
+                print("Category:",row[2])          
+                print("Model:",row[3])          
+                print("Stock:",row[7])          
+                print("Selling Price:",row[6])     
+                print("========================") 
             
+            selected_id = int(input("Enter Product ID: "))
+            product_found = False
+            
+            for row in rows:
+                if row[0] == selected_id:
+                    product_found = True
+                    stock = row[7]
+                    
+                    if quantity <= stock :
+                        selling_price = row[6]
+                        line_total = quantity * selling_price
+                        new_stock = stock - quantity
+                        cart.append([
+    selected_id,
+    quantity,
+    selling_price,
+    line_total,
+    new_stock
+])
+                        bill_total += line_total
+                    
+                    else:
+                        print("Not Enough Stock")
+                        break
+                    
+            if product_found == False:
+                print("Invalid Product ID")              
         print("""
 1. Add Product
 2. Finish Bill
@@ -142,280 +220,349 @@ def sell_product():
             continue
         if choi == 2:
             break
-    customer = input("Customer Name: ").strip()
-    if customer == "":
-        customer ="Cash Customer"
-
+    
     if bill_total == 0:
         print("No products were sold.")
+        connection.close()
         return
     print("Subtoal is:",bill_total, "Ruppee")
     discount = int(input("Enter Discount amount: "))
     final_bill = bill_total-discount
     print("Discount:", discount, "Rupee")
     print("Final is:",final_bill, "Ruppee")
-    recieved = int(input("Enter The Amount To pay:"))
-    if recieved >= final_bill:
+    mode = input("Payment Mode (Cash/UPI/Card): ").strip()
+    received = int(input("Enter The Amount To pay:"))
+    if received >= final_bill:
         pending = 0
         status = "Paid"
         print("Balance Cleared")
     else:
-        pending = final_bill - recieved
+        pending = final_bill - received
         status = "Pending"
-
-    bill_line = (
-        str(bill_no) + "," +
-        customer + "," +
-        str(today) + "," +
-        str(bill_total) + "," +
-        str(discount) + "," +
-        str(final_bill)+ "," +
-        str(recieved) + "," +
-        str(pending) + "," +
-        status + "\n"
-    )
-
-    file = open("bill.txt", "a")
-    file.write(bill_line)
-    file.close()
-def return_product():
-    find = str(input("Enter The Item name to return: "))
-    quantity = int(input("Enter The quantity: "))
-    today = datetime.now().strftime("%d-%m-%Y")
-    file = open("products.txt" , "r")
-    new_data = ""
-    find_item = find.lower()
-    item_found = False
-    for line in file:
-        
-        data = line.split(",")
-        if len(data) < 7:
-            continue
-        brand = data[0]
-        category = data[1]
-        model_name = data [2]
-        size = data[3]
-        cp = data [4]
-        sp = data [5]
-        stock = int(data [6])
-        Brand = brand.lower()
-        Category = category.lower()
-        Model = model_name.lower()
-        full_name = Brand + " " + category + " " + Model
-        if find_item in full_name:
-            item_found = True 
-            print("Item Found: " +"\n" ,"Brand Name: ", brand + "\n" ,"Category: " ,category + "\n" , 
-                    "Model Name: " ,model_name + "\n" , "Size: ", size + "\n",
-                  "Cost Price: ",cp +"\n", "Selling Price: ",sp +"\n", "Stock: ", stock )
-            
-            new_stock = stock + quantity
-            updated_line = brand + "," + category + "," + model_name + "," + size + "," + cp + "," + sp + "," + str(new_stock) + "\n"
-            new_data = new_data + updated_line
-            print("Return Successfull " + "\n" , "New Stock: " , new_stock)
-            filees = open("return.txt", "a")
-            sales_line = str(today) + "," + brand + "," + model_name + "," + str(quantity) + "\n"
-            filees.write(sales_line)
-            filees.close()
-            
-        else:
-            new_data = new_data + line
-           
-    if item_found == False:
-        print("Item Not Found")
-    file.close()
-    files = open("products.txt" , "w")
-    files.write(new_data)
-    files.close()
-
-def low_stock():
-    file = open("products.txt" , "r")
-    for line in file:
-        data = line.split(",")
-        if len(data) < 7:
-            continue
-        brand = data[0]
-        model_name = data [2]
-        stock = int(data [6])
-        if stock <=5:
-            print("-------------------")
-            print("Brand:", brand)
-            print("Model Name:", model_name)
-            print("Stock:", stock)
-    file.close()
-
-def sales_report():
-    file = open("sales.txt", "r")
-    sales_data = {}
-    for line in file:
-        data = line.split(",")
-        if len(data)<4:
-            continue
-        date =data[0]
-        brand =data[1]
-        model = data[2]
-        quantity= int(data[3])
-        product = brand + " " + model
-        
-        if product in sales_data:
-            sales_data[product] = sales_data[product] + quantity
-        else:
-            sales_data[product] = quantity
-    largest = 0
-    larg_item = ""
-    smallest = 9999
-    small_item = ""
-    print("=====  SALES REPORT =====")
-    if len(sales_data) == 0:
-        print("No Sales")
-        return 
-    for ch in sales_data:
-        print(ch, ":", sales_data[ch],"Sold")
-        
-        if sales_data[ch] > largest:
-            largest = sales_data[ch]
-            larg_item = ch
-        if sales_data[ch] < smallest:
-            smallest = sales_data[ch]
-            small_item = ch
-
-    print("Highest sold item is:", larg_item ," with", largest,"Sold")
-    print("Lowest sold item is:", small_item ," with", smallest,"Sold")
-    file.close()
-
-def monthly_summary():
-    find = str(input("Enter The Item name to get report: "))
-    file = open("sales.txt" , "r")
-    find_item = find.lower()
-    item_found = False
-    sales_month = {}
-    for line in file:
-        
-        data = line.split(",")
-        if len(data) < 4:
-            continue
-        date = data[0]
-        brand = data[1]
-        model_name = data [2]
-        quantity = int(data[3])
-        Brand = brand.lower()
-        Model = model_name.lower()
-        date_y = date.split("-")
-        month = date_y[1]
-        year = date_y[2]
-        month_year = month + "-" + year
-        full_name = Brand + " " + Model
-        if find_item in full_name:
-            if month_year in sales_month:
-                sales_month[month_year] = sales_month[month_year]+quantity
-            else:
-                sales_month[month_year] = quantity
     
-    filea = open("return.txt" , "r")
-    find_item = find.lower()
-    item_found = False
-    return_month = {}
-    for line in filea:
-        
-        dataa = line.split(",")
-        if len(dataa) < 4:
-            continue
-        datea = dataa[0]
-        branda = dataa[1]
-        model_namea = dataa [2]
-        quantitya = int(dataa[3])
-        Branda = branda.lower()
-        Modela = model_namea.lower()
-        date_ya = datea.split("-")
-        montha = date_ya[1]
-        yeara = date_ya[2]
-        month_yeara = montha + "-" + yeara
-        full_namea = Branda + " " + Modela
-        if find_item in full_namea:
-            if month_yeara in return_month:
-                return_month[month_yeara] = return_month[month_yeara]+quantitya
-            else:
-                return_month[month_yeara] = quantitya
-    print(" ====  Monthly Reports  ====")   
-    for month in sales_month:
-        if month in sales_month:
-            sales = 0
-        sales = sales_month[month]   
-        if month in return_month:
-            returns = 0
-        returns = return_month[month]
+    cursor.execute(
+        """
+INSERT INTO Bills(
+Date,
+CustomerID,
+Total,
+Discount,
+Final,
+Paid,
+Pending,
+Status
 
-        net = sales - returns
-        print("Month: ",month,"\n","\n","Product: ",model_name,"\n","Sales: ",sales,"\n","Returns: ",returns,"\n","Net: ",net, "\n")
-    file.close()
-    filea.close()
+)
+VALUES(
 
-def recieve_payment():
-    bill_no = int(input("Enter The Bill Number: "))
-    file = open("bill.txt","r")
-    bill_found = False
-    new_data = ""
-    today = datetime.now().strftime("%d-%m-%Y")
-    for line in file:
+?,
+?,
+?,
+?,
+?,
+?,
+?,
+?
+)""",
+(today,
+customer_id,
+bill_total,
+discount,
+final_bill,
+received,
+pending,
+status))
+    bill_id = cursor.lastrowid
+    cursor.execute("""SELECT CurrentPending
+FROM Customers
+WHERE CustomerID = ?""",(customer_id,))
+    fin_pend = cursor.fetchone()
         
-        data = line.split(",")
-        if len(data)<9:
-            continue
-        bill = int(data[0])
-        name = data[1]
-        date = data[2]
-        subtotal = int(data[3])
-        discount = int(data[4])
-        final_bill = int(data[5])
-        paid = int(data[6])
-        pending =int(data[7])
-        status = data[8].strip()
-        if bill_no == bill:
-            bill_found = True
-            
-            print("====  Bill Found  ====")
-            print("Bill No.", str(bill) +"\n" ,"Customer's Name:",name +"\n" ,"Date:",str(date)+"\n" ,"SubTotal balance:",str(subtotal)+"\n" ,"Discount:",str(discount)+"\n" ,"Final Bill.:",str(final_bill)+"\n" ,"Paid:",str(paid)+"\n" ,"Pending:",str(pending)+"\n" ,"Status:",status+"\n")   
-            if status == "Paid":
-                print("This bill is already cleared.") 
-                file.close()
-                return
-            today_payment = int(input("Enter The Amount Received Today:"))
-            paid = paid + today_payment
-            pending = final_bill - paid
-            if pending == 0:
-                status = "Paid"
-            else:
-                status = "Pending"
-            files = open("payments.txt","a")
-            final = str(bill) + "," + str(today) + "," + str(today_payment)+ "\n"
-            files.write(final)
-            files.close()
-            
-            update = (str(bill) + "," +
-            name + "," +
-            str(date) + "," +
-            str(subtotal)+ "," +
-            str(discount)+ "," +
-            str(final_bill) + "," +
-            str(paid) + "," +
-            str(pending) + "," +
-            status + "\n")
-            new_data = new_data + update
-            print("==== Payment Receipt ====")
-            print("Bill No.:", bill)
-            print("Customer Name:", name)
-            print("Payment Date:",today)
-            print("Paid Today:", today_payment)
-            print("Total Paid:", paid)
-            print("Pending:", pending)
-            print("--------------------------")
+    fin = fin_pend[0]
+    final_pending = fin + pending
+    cursor.execute(""" UPDATE Customers SET CurrentPending = ? WHERE CustomerID = ? """,
+                    (final_pending, customer_id))
+    for item in cart:
+        quantity_1 = item[1]
+        sp = item[2]
+        l_t = item[3]
+        selected = item[0]
+        new_s = item[4]
+
+        cursor.execute(
+            """INSERT INTO BillItems(
+            BillId,
+            ProductId,
+            Quantity,
+            Price,
+            Total)
+            VALUES(
+            ?,
+            ?,
+            ?,
+            ?,
+            ?)""",(
+                bill_id,
+                selected,
+                quantity_1,
+                sp,
+                l_t
+            )
+        )
+    
+        cursor.execute(""" UPDATE Products 
+                       SET Stock = ? 
+                       WHERE ProductID = ? """,
+                    (new_s, selected))
+        
+    cursor.execute(
+            """INSERT INTO Payments(
+            BillId,
+            Date,
+            Amount,
+            Mode)
+            VALUES(
+            ?,
+            ?,
+            ?,
+            ?)""",
+            (bill_id,
+            today,
+            received,
+            mode)
+        )
+    connection.commit()
+    connection.close()
+def return_productv2():
+    connection = sqlite3.connect("hardware_store.db")
+    cursor = connection.cursor()
+    search = input("Enter customer's Name or Phone:")
+    cursor.execute(
+            """
+SELECT * FROM Customers
+WHERE name LIKE ?
+OR phone LIKE ?""",
+("%"+search+"%",
+                    "%"+search+"%")
+        )
+    found = cursor.fetchall()
+    if found == []:
+        print("No Customer Found")
+        connection.close()
+        return
+    else:
+        for row in found:
+            print("Customer ID:",row[0])
+            print("Name:",row[1])
+            print("Phone:",row[2])
+            print("Address:",row[3])
+            print("Pending:",row[4])
+        customer_found = False
+        verif = int(input("Enter Customer's ID: "))
+        for row in found:
+            if verif == row[0]:
+                customer_found= True
+                customer_id = row[0]
+                break
+        if customer_found== False:
+            print("Invalid Customer's ID")
+            return
+        cursor.execute(
+            """
+SELECT * FROM Bills
+WHERE CustomerID = ?""",
+(customer_id,)
+        )
+        bill_found = cursor.fetchall()
+        
+                
+        if bill_found == []:
+            print("No Bill Found")
+            return
         else:
-            new_data=new_data + line
-    filea = open("bill.txt","w")
-    filea.write(new_data)
-    filea.close()
-    if bill_found:
-        print("Done")
-    if bill_found==False:
-        print("Bill Not Found")
+            for bil in bill_found:
+                print("Bill ID:", bil[0])
+                print("Date:", bil[1])
+                print("Final:", bil[5])
+                print("Pending:", bil[7])
+                print("----------------")
+            billi_found = False
+            verify = int(input("Enter Bill ID:"))
+            for bil in bill_found:
+                if bil[0] == verify:
+                    total = bil[3]
+                    discount = bil[4]
+                    paid = bil[6]
+                    billi_found= True
+                    bill_id = bil[0]
+                    break
+            if billi_found == False:
+                print("Invalid Bill Id")
+                return
+            cursor.execute(
+            """
+SELECT * FROM BillItems
+INNER JOIN Products
+ON BillItems.ProductID = Products.ProductID
+WHERE BillID = ? """,
+(bill_id,)
+        )
+            product = cursor.fetchall()
+            if product == []:
+                print("No Product Found")
+                return
+            else:
+                product_found = False
+                        
+                for pro in product:
+                    print("Item ID:", pro[0])
+                    print("Brand:", pro[7])
+                    print("Category:", pro[8])
+                    print("Model:", pro[9])
 
+                    print("Product ID:", pro[2])
+                    print("Quantity:", pro[3])
+                    
+                    print("----------------")
+                check = int(input("Enter Product ID:"))
+                for pro in product:
+                    if check == pro[2]:
+                        product_found = True
+                        product_id = pro[2]
+                        
+                        quantityy_bought = pro[3]
+                        selling_price = pro[4]
+                        line_total = pro[5]
+                        retur =int(input("Enter Return Quantity:"))
+                        if retur <= 0:
+                            print("Invalid Return Quantity")
+                            return
+                        if retur > quantityy_bought:
+                            print("Return quantity exceeds purchased quantity")
+                            return
+                        if retur <= pro[3]:
+                            total_bought = quantityy_bought - retur
+                            return_amount = retur * selling_price
+                            final = line_total - return_amount
+                            current_stock = pro[13]
+                            new_stock = current_stock + retur
+                        
+                            cursor.execute(
+                                """UPDATE Products
+                                SET Stock = ?
+                                WHERE ProductID = ?""",
+                                (new_stock,product_id)
+                            )
+                            item_id = pro[0]
+                            cursor.execute(
+                                """UPDATE BillItems
+                                SET Quantity = ?,
+                                 Total = ?
+                                WHERE ItemID = ?""",
+                                (total_bought,
+                                 final,
+                                 item_id)
+                            )
+                            
+                            total = total -return_amount
+                            finall = total - discount
+                            pending = finall - paid
+                            cursor.execute(
+                                """UPDATE Bills
+                                SET Total = ?,
+                                Final = ?,
+                                Pending = ?
+                                WHERE BillID = ?""",
+                                
+                                (total,
+                                 finall,
+                                 pending,
+                                 bill_id)
+                            ) 
+                            cursor.execute(
+                                """UPDATE Customers
+                                SET CurrentPending = ?
+                                WHERE CustomerID = ?""",
+                                (pending,customer_id)
+                            )
+                            print("₹", return_amount, "deducted from bill.")
+                            print("New Pending:", pending)
+                            break
+                if product_found== False:
+                    print("Invalid Product ID")
+                    return
+                
+    connection.commit()
+    connection.close()
 
+def receive_paymentv2():
+    today = datetime.now().strftime("%d-%m-%Y")
+    connection = sqlite3.connect("hardware_store.db")
+    cursor = connection.cursor()
+    search = input("Enter customer's Name or Phone:")
+    cursor.execute(
+            """
+SELECT * FROM Customers
+WHERE name LIKE ?
+OR phone LIKE ?""",
+("%"+search+"%",
+                    "%"+search+"%")
+        )
+    found = cursor.fetchall()
+    if found == []:
+        print("No Customer Found")
+        connection.close()
+        return
+    else:
+        for row in found:
+            print("Customer ID:",row[0])
+            print("Name:",row[1])
+            print("Phone:",row[2])
+            print("Address:",row[3])
+            print("Pending:",row[4])
+        customer_found = False
+        verif = int(input("Enter Customer's ID: "))
+        for row in found:
+            if verif == row[0]:
+                customer_found= True
+                customer_id = row[0]
+                pending = row[4]
+                break
+        if customer_found== False:
+            print("Invalid Customer's ID")
+            return
+        balance = int(input("Enter The Amount To Pay:"))
+        
+        final = pending - balance
+        cursor.execute(
+            """UPDATE Customers
+            SET CurrentPending = ?
+            WHERE CustomerID = ?""",
+            (final,customer_id)
+        )
+        mode = input("Payment Mode (Cash/UPI/Card): ").strip()
+
+        cursor.execute("""
+        INSERT INTO Payments(
+        BillId,
+        Date,
+        Amount,
+        Mode
+        )
+        VALUES(
+        ?,
+        ?,
+        ?,
+        ?
+        )
+        """,
+        (
+        None,
+        today,
+        balance,
+        mode
+        ))
+    connection.commit()
+    connection.close()
+    print("Payment Received Successfully.")
+    print("Remaining Pending:", final)
