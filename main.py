@@ -566,3 +566,190 @@ OR phone LIKE ?""",
     connection.close()
     print("Payment Received Successfully.")
     print("Remaining Pending:", final)
+def debt_report():
+    connection = sqlite3.connect("hardware_store.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    SELECT *
+    FROM Customers
+    WHERE CurrentPending > 0
+    """)
+
+    rows = cursor.fetchall()
+
+    if rows == []:
+        print("No Pending Customers.")
+        connection.close()
+        return
+
+    for row in rows:
+        customerId = row[0]
+        name = row[1]
+        phone = row[2]
+        address = row[3]
+        currentpending = row[4]
+
+        print("==== Customer's Detail ====")
+        print("Customer ID:", customerId)
+        print("Name:", name)
+        print("Phone Number:", phone)
+        print("Address:", address)
+        print("Pending:", currentpending)
+        print("===========================")
+
+    connection.close()
+def customer_history():
+    connection = sqlite3.connect("hardware_store.db")
+    cursor = connection.cursor()
+    search = input("Enter customer's Name or Phone:")
+    cursor.execute(
+            """
+SELECT * FROM Customers
+WHERE name LIKE ?
+OR phone LIKE ?""",
+("%"+search+"%",
+                    "%"+search+"%")
+        )
+    found = cursor.fetchall()
+    if found == []:
+        print("No Customer Found")
+        connection.close()
+        return
+    else:
+        for row in found:
+            print("Customer ID:",row[0])
+            print("Name:",row[1])
+            print("Phone:",row[2])
+            print("Address:",row[3])
+            print("Pending:",row[4])
+        customer_found = False
+        verif = int(input("Enter Customer's ID: "))
+        for row in found:
+            if verif == row[0]:
+                customer_found= True
+                customer_id = row[0]
+                customer = row[1]
+                phone = row[2]
+                break
+        if customer_found== False:
+            print("Invalid Customer's ID")
+            connection.close()
+            return
+        cursor.execute(
+            """SELECT *
+            FROM Bills
+            WHERE CustomerID = ?""",
+            (customer_id,)
+        )   
+        rows = cursor.fetchall()
+        if rows == []:
+            print("No Bills Found.")
+            connection.close()
+            return
+        bill_found = False
+        
+        for rowss in rows:    
+            print("=" * 35)
+            print("Bill ID:",rowss[0])
+            print("Date:",rowss[1])
+            print("Final:",rowss[5])
+            print("Pending:",rowss[7])
+            print("Status:",rowss[8])
+            print("=" * 35)
+        verify = int(input("Enter The Bill ID:"))   
+        for rowss in rows:
+            if rowss[0] ==verify:
+                bill_found = True
+                billid = rowss[0]
+                date = rowss[1]
+                final = rowss[5]
+                pending = rowss[7]
+                status = rowss[8]
+                total = rowss[3]
+                discount = rowss[4]
+                paid = rowss[6]
+                break
+        if bill_found == False:
+            print("Invalid Bill ID")
+            connection.close()
+            return
+        
+        cursor.execute(
+            """SELECT *
+            FROM BillItems
+            INNER JOIN Products
+            ON BillItems.ProductID = Products.ProductID
+            WHERE BillID = ?
+""",(verify,)
+        )
+        final_row = cursor.fetchall()
+        if final_row == []:
+            print("No Products Found.")
+            connection.close()
+            return
+        print("\n====================\n")
+        print(" BILL ")
+        print("\n====================\n")
+        print("Customer :", customer)
+        print("Phone    :", phone)
+        print("\n")
+        print("Bill ID :",billid)
+        print("Date:",date)
+        print("\n","-"*35)
+        for finrow in final_row:
+            print("Brand      :", finrow[7])
+            print("Model      :", finrow[9])
+            print("Quantity   :", finrow[3])
+            print("Category   :", finrow[8])
+            print("Price(Each)      :", finrow[4])
+            print("Total      :", finrow[5])
+            print("-" * 35)
+        print("Subtotal :", total)
+        print("Discount :", discount)
+        print("Final    :", final)
+        print("Paid     :", paid)
+        print("Pending  :", pending)
+        print("Status   :", status)
+    connection.close()   
+def summary ():
+        connection = sqlite3.connect("hardware_store.db")
+        cursor = connection.cursor()    
+        month = input("Enter Month (MM): ")
+        year = input("Enter Year (YYYY): ") 
+        cursor.execute(
+            """
+SELECT * FROM Bills
+WHERE Date LIKE ?""",
+("%-"+month+"-"+year,)
+        )             
+        rows = cursor.fetchall()
+
+        if rows == []:
+            print("No Bills Found.")
+            connection.close()
+            return
+        bill_count = 0
+        sales = 0
+        discount = 0
+        received = 0
+        pending = 0
+        for row in rows:
+            bill_count += 1
+            sales += row[3]
+            discount += row[4]
+            received += row[6]
+            pending += row[7]
+        print("="*40)
+        print("MONTHLY SUMMARY")
+        print(month + "-" + year)
+        print("="*40)
+
+        print("Bills           :", bill_count)
+        print("Sales           :", sales)
+        print("Discount        :", discount)
+        print("Received Amount :", received)
+        print("Pending Amount  :", pending)
+
+        print("="*40)
+        connection.close()
