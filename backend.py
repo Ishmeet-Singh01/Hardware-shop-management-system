@@ -743,9 +743,21 @@ def add_productv2(brand,
     except ValueError:
         return False,"Enter Valid Numbers"
     status,message = validate_product(brand,category,model_name,size,cost_price,selling_price,stocks)
+    if status is True:
+        found, product_id, error = check_duplicate(brand,category,model_name,size)
+        
+        if error:
+            return False,error
+        if found:
+            success,messages=update_existing_product(product_id,cost_price,selling_price,stocks)
+            return success, messages
+        else:
+            done,text=save_product(brand,category,model_name,size,cost_price,selling_price,stocks)
+            return done,text  
     if not status:
-        return status,message
-    return save_product(brand,category,model_name,size,cost_price,selling_price,stocks)
+        return False,message
+    
+    
 def save_product(brand,category,model_name,size,cost_price,selling_price,stocks):
     try:
         connection = sqlite3.connect("hardware_store.db")
@@ -781,3 +793,60 @@ INSERT INTO Products(
     finally:
         connection.close()
     return True,"Item Added Successfully"
+def check_duplicate(brand,category,model_name,size):
+    connection=None
+    try:
+        connection = sqlite3.connect("hardware_store.db")
+        cursor = connection.cursor()
+    
+    
+    
+        cursor.execute("""
+    SELECT ProductID FROM Products
+                    WHERE Brand = ?
+                    AND Category =?
+                    AND Model = ?
+                        AND Size = ?
+                    """,
+                    (brand,category,model_name,size ))
+        row = cursor.fetchone()
+        
+        if row is None:
+            return False,None,None
+        else:
+            product_id = row[0]
+            return True ,product_id,None
+    except sqlite3.Error:
+        return False,None,"Server error, Please Try Again Later"
+    finally:
+        if connection:
+            connection.close()
+def update_existing_product(product_id,cost_price,selling_price,stock):
+    connection=None
+    try:
+        connection = sqlite3.connect("hardware_store.db")
+        cursor = connection.cursor()
+        cursor.execute("""
+SELECT Stock FROM Products WHERE ProductID = ?""",(product_id,)
+)
+        cell = cursor.fetchone()
+        if cell is None:
+            return False,"Product not found"
+        stocks = cell[0]
+        final_stock = stock + stocks
+        cursor.execute("""
+UPDATE Products SET
+                       CostPrice = ?,
+                       SellingPrice =?,
+                       Stock = ?
+                        WHERE
+                       ProductID = ?""",
+                       (cost_price,selling_price,final_stock,product_id))
+        connection.commit() 
+        return True,"Product Updated Successfully"   
+    except sqlite3.Error:
+        return False,"Server Error, Try Again Later"
+    
+    finally:
+        if connection: 
+            connection.close()
